@@ -9,5 +9,8 @@ namespace HotelBookingAppWebApi.Interfaces
         Task<T> AddAsync(T entity);
         Task<T?> UpdateAsync(K id, T entity);
         Task<T?> DeleteAsync(K id);
+
+        // 🔥 REQUIRED for Includes
+        Task<IEnumerable<T>> GetAllIncludingAsync(params Expression<Func<T, object>>[] includes);
     }
 }

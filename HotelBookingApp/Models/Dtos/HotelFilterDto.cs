@@ -2,6 +2,7 @@
 {
     public class HotelFilterDto
     {
+        public int? HotelId { get; set; }
         public string? Location { get; set; }
         public double? MinRating { get; set; }
         public decimal? MinPrice { get; set; }

@@ -1,5 +1,6 @@
 ﻿using HotelBookingApp.DTOs.User;
 using HotelBookingApp.Interfaces.InterfaceServices;
+using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;

@@ -1,7 +1,7 @@
-﻿
-using HotelBookingApp.Models;
+﻿using HotelBookingApp.Models;
 using HotelBookingAppWebApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace HotelBookingApp.Repositories
 {
@@ -17,21 +17,31 @@ namespace HotelBookingApp.Repositories
         }
 
         // ================= GET ALL =================
-
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();
         }
 
-        // ================= GET BY ID =================
+        // ================= GET ALL WITH INCLUDES =================
+        public async Task<IEnumerable<T>> GetAllIncludingAsync(params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet;
 
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        // ================= GET BY ID =================
         public async Task<T?> GetByIdAsync(K id)
         {
             return await _dbSet.FindAsync(id);
         }
 
         // ================= ADD =================
-
         public async Task<T> AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
@@ -40,7 +50,6 @@ namespace HotelBookingApp.Repositories
         }
 
         // ================= UPDATE =================
-
         public async Task<T?> UpdateAsync(K id, T entity)
         {
             var existing = await _dbSet.FindAsync(id);
@@ -55,7 +64,6 @@ namespace HotelBookingApp.Repositories
         }
 
         // ================= DELETE =================
-
         public async Task<T?> DeleteAsync(K id)
         {
             var entity = await _dbSet.FindAsync(id);

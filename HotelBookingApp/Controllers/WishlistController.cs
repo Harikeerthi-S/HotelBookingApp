@@ -1,163 +1,81 @@
 ﻿using HotelBookingApp.Models.Dtos;
 using HotelBookingApp.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace HotelBookingApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class WishlistController : ControllerBase
     {
-        private readonly IWishlistService _wishlistService;
+        private readonly IWishlistService _service;
 
-        public WishlistController(IWishlistService wishlistService)
+        public WishlistController(IWishlistService service)
         {
-            _wishlistService = wishlistService;
+            _service = service;
         }
 
-        // ==========================================
-        // ADD TO WISHLIST
-        // ==========================================
         [HttpPost]
-        [Authorize(Roles = "user,hotelmanager")]
-        public async Task<IActionResult> AddToWishlist([FromBody] WishlistDto dto)
+        public async Task<IActionResult> AddToWishlist(WishlistDto dto)
         {
             try
             {
-                var userIdFromToken = int.Parse(
-                    User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-                if (dto.UserId != userIdFromToken)
-                    return Forbid();
-
-                var result = await _wishlistService.AddToWishlistAsync(dto);
-
+                var result = await _service.AddToWishlistAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    message = "Failed to add to wishlist.",
-                    error = ex.Message
-                });
+                return BadRequest(ex.Message);
             }
         }
 
-        // ==========================================
-        // GET MY WISHLIST
-        // ==========================================
-        [HttpGet("my")]
-        [Authorize(Roles = "user,hotelmanager")]
-        public async Task<IActionResult> GetMyWishlist()
-        {
-            try
-            {
-                var userId = int.Parse(
-                    User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-                var wishlist = await _wishlistService
-                    .GetUserWishlistAsync(userId);
-
-                return Ok(wishlist);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    message = "Error retrieving wishlist.",
-                    error = ex.Message
-                });
-            }
-        }
-
-        // ==========================================
-        // GET USER WISHLIST (Admin)
-        // ==========================================
         [HttpGet("user/{userId}")]
-        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetUserWishlist(int userId)
         {
             try
             {
-                var wishlist = await _wishlistService
-                    .GetUserWishlistAsync(userId);
-
-                return Ok(wishlist);
+                var result = await _service.GetUserWishlistAsync(userId);
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    message = "Error retrieving wishlist.",
-                    error = ex.Message
-                });
+                return StatusCode(500, ex.Message);
             }
         }
 
-        // ==========================================
-        // REMOVE BY WISHLIST ID
-        // ==========================================
         [HttpDelete("{wishlistId}")]
-        [Authorize(Roles = "admin,user,hotelmanager")]
-        public async Task<IActionResult> RemoveFromWishlist(int wishlistId)
+        public async Task<IActionResult> Remove(int wishlistId)
         {
             try
             {
-                var result = await _wishlistService
-                    .RemoveFromWishlistAsync(wishlistId);
+                var success = await _service.RemoveFromWishlistAsync(wishlistId);
 
-                if (!result)
-                    return NotFound(new { message = "Wishlist item not found." });
+                if (!success)
+                    return NotFound("Wishlist item not found");
 
-                return Ok(new
-                {
-                    message = "Removed from wishlist successfully."
-                });
+                return Ok("Removed successfully");
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    message = "Failed to remove wishlist item.",
-                    error = ex.Message
-                });
+                return StatusCode(500, ex.Message);
             }
         }
 
-        // ==========================================
-        // REMOVE BY USER + HOTEL
-        // ==========================================
         [HttpDelete("remove")]
-        [Authorize(Roles = "user,hotelmanager")]
-        public async Task<IActionResult> RemoveByUserAndHotel([FromQuery] int hotelId)
+        public async Task<IActionResult> RemoveByUserAndHotel(int userId, int hotelId)
         {
             try
             {
-                var userId = int.Parse(
-                    User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var success = await _service.RemoveByUserAndHotelAsync(userId, hotelId);
 
-                var result = await _wishlistService
-                    .RemoveByUserAndHotelAsync(userId, hotelId);
+                if (!success)
+                    return NotFound("Item not found");
 
-                if (!result)
-                    return NotFound(new { message = "Wishlist item not found." });
-
-                return Ok(new
-                {
-                    message = "Removed successfully."
-                });
+                return Ok("Removed successfully");
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    message = "Failed to remove wishlist item.",
-                    error = ex.Message
-                });
+                return StatusCode(500, ex.Message);
             }
         }
     }

@@ -20,28 +20,23 @@ namespace HotelBookingApp.Services
             _hotelRepository = hotelRepository;
         }
 
-        // =====================================
-        // ADD TO WISHLIST
-        // =====================================
         public async Task<WishlistResponseDto> AddToWishlistAsync(WishlistDto dto)
         {
             try
             {
-                var user = await _userRepository.GetByIdAsync(dto.UserId);
-                if (user == null)
-                    throw new Exception("User not found");
+                if (dto == null)
+                    throw new ArgumentNullException(nameof(dto));
 
-                var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId);
-                if (hotel == null)
-                    throw new Exception("Hotel not found");
+                var user = await _userRepository.GetByIdAsync(dto.UserId)
+                           ?? throw new Exception("User not found");
 
-                var wishlistItems = await _wishlistRepository.GetAllAsync();
+                var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId)
+                            ?? throw new Exception("Hotel not found");
 
-                var exists = wishlistItems.Any(w =>
-                    w.UserId == dto.UserId &&
-                    w.HotelId == dto.HotelId);
+                var wishlistItems = await _wishlistRepository.GetAllAsync()
+                                    ?? Enumerable.Empty<Wishlist>();
 
-                if (exists)
+                if (wishlistItems.Any(w => w.UserId == dto.UserId && w.HotelId == dto.HotelId))
                     throw new Exception("Hotel already exists in wishlist");
 
                 var wishlist = new Wishlist
@@ -59,20 +54,18 @@ namespace HotelBookingApp.Services
                     HotelId = created.HotelId
                 };
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception($"Error adding hotel to wishlist: {ex.Message}");
+                throw; // preserve original stack trace
             }
         }
 
-        // =====================================
-        // GET USER WISHLIST
-        // =====================================
         public async Task<IEnumerable<WishlistResponseDto>> GetUserWishlistAsync(int userId)
         {
             try
             {
-                var wishlistItems = await _wishlistRepository.GetAllAsync();
+                var wishlistItems = await _wishlistRepository.GetAllAsync()
+                                    ?? Enumerable.Empty<Wishlist>();
 
                 return wishlistItems
                     .Where(w => w.UserId == userId)
@@ -81,58 +74,46 @@ namespace HotelBookingApp.Services
                         WishlistId = w.WishlistId,
                         UserId = w.UserId,
                         HotelId = w.HotelId
-                    })
-                    .ToList();
+                    });
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception($"Error retrieving wishlist: {ex.Message}");
+                throw;
             }
         }
 
-        // =====================================
-        // REMOVE BY WISHLIST ID
-        // =====================================
         public async Task<bool> RemoveFromWishlistAsync(int wishlistId)
         {
             try
             {
                 var deleted = await _wishlistRepository.DeleteAsync(wishlistId);
-
-                if (deleted == null)
-                    return false;
-
-                return true;
+                return deleted != null;
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception($"Error removing wishlist item: {ex.Message}");
+                throw;
             }
         }
 
-        // =====================================
-        // REMOVE BY USER + HOTEL
-        // =====================================
         public async Task<bool> RemoveByUserAndHotelAsync(int userId, int hotelId)
         {
             try
             {
-                var wishlistItems = await _wishlistRepository.GetAllAsync();
+                var wishlistItems = await _wishlistRepository.GetAllAsync()
+                                    ?? Enumerable.Empty<Wishlist>();
 
                 var item = wishlistItems.FirstOrDefault(w =>
-                    w.UserId == userId &&
-                    w.HotelId == hotelId);
+                    w.UserId == userId && w.HotelId == hotelId);
 
                 if (item == null)
                     return false;
 
                 await _wishlistRepository.DeleteAsync(item.WishlistId);
-
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
-                throw new Exception($"Error removing wishlist item: {ex.Message}");
+                throw;
             }
         }
     }

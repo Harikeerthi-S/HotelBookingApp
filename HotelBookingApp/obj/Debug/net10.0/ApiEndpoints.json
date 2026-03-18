@@ -989,7 +989,7 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.WishlistController",
-    "Method": "RemoveFromWishlist",
+    "Method": "Remove",
     "RelativePath": "api/Wishlist/{wishlistId}",
     "HttpMethod": "DELETE",
     "IsController": true,
@@ -1005,22 +1005,17 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.WishlistController",
-    "Method": "GetMyWishlist",
-    "RelativePath": "api/Wishlist/my",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "HotelBookingApp.Controllers.WishlistController",
     "Method": "RemoveByUserAndHotel",
     "RelativePath": "api/Wishlist/remove",
     "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
     "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
       {
         "Name": "hotelId",
         "Type": "System.Int32",

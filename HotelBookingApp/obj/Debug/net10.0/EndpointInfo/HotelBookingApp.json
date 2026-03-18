@@ -1615,18 +1615,6 @@
         }
       }
     },
-    "/api/Wishlist/my": {
-      "get": {
-        "tags": [
-          "Wishlist"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Wishlist/user/{userId}": {
       "get": {
         "tags": [
@@ -1679,6 +1667,14 @@
           "Wishlist"
         ],
         "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
           {
             "name": "hotelId",
             "in": "query",
@@ -1895,6 +1891,11 @@
       "HotelFilterDto": {
         "type": "object",
         "properties": {
+          "hotelId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
           "location": {
             "type": "string",
             "nullable": true

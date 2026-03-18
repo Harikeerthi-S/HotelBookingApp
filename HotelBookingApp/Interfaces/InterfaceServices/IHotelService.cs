@@ -1,29 +1,29 @@
-﻿using HotelBookingApp.Models;
-using HotelBookingApp.Models.Dtos;
+﻿using HotelBookingApp.Models.Dtos;
 
 namespace HotelBookingApp.Interfaces.InterfaceServices
 {
     public interface IHotelService
     {
-        // Create a new hotel
+        // ================= CREATE =================
         Task<HotelResponseDto> CreateHotelAsync(CreateHotelDto dto);
 
-        // Get hotel by Id
+        // ================= READ =================
         Task<HotelResponseDto?> GetHotelByIdAsync(int hotelId);
 
-        // Get paginated hotels (POST)
         Task<PagedResponseDto<HotelResponseDto>> GetHotelsPagedAsync(PagedRequestDto request);
 
-        // Search hotels by location
+        // ================= FILTER =================
+        Task<PagedResponseDto<HotelResponseDto>> FilterHotelsPagedAsync(
+            HotelFilterDto filter,
+            PagedRequestDto request);
+
+        // ================= SEARCH =================
         Task<IEnumerable<HotelResponseDto>> SearchHotelsAsync(string location);
 
-        // Filter hotels with pagination
-        Task<PagedResponseDto<HotelResponseDto>> FilterHotelsPagedAsync(HotelFilterDto filter, PagedRequestDto request);
-
-        // Update hotel
+        // ================= UPDATE =================
         Task<HotelResponseDto?> UpdateHotelAsync(int hotelId, CreateHotelDto dto);
 
-        // Deactivate hotel (soft delete)
+        // ================= SOFT DELETE =================
         Task<bool> DeactivateHotelAsync(int hotelId);
     }
 }

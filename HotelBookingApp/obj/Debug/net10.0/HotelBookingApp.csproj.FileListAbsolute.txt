@@ -306,7 +306,6 @@ C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\H
 C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\HotelBookingApp.csproj.CoreCompileInputs.cache
 C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\HotelBookingApp.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\HotelBookingApp.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\HotelBookingApp.sourcelink.json
 C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\Harikeerthi.S\OneDrive - New American Funding\Desktop\HotelBookingApp\HotelBookingApp\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
