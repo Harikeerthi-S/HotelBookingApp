@@ -37,6 +37,7 @@ namespace HotelBookingApp.Migrations
                     Location = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     StarRating = table.Column<double>(type: "float", nullable: false),
+                    TotalRooms = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     ContactNumber = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },

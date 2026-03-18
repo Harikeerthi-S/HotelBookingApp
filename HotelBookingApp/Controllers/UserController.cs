@@ -29,40 +29,7 @@ namespace HotelBookingApp.Controllers
             return CreatedAtAction(nameof(GetUserById), new { userId = result.UserId }, result);
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginUserRequestDTO request)
-        {
-            var result = await _userService.LoginUser(request);
-            if (result == null)
-                return Unauthorized("Invalid email or password.");
-
-            var token = GenerateToken(result.UserName, result.Role);
-            result.Token = token;
-            return Ok(result);
-        }
-
-        private string GenerateToken(string userName, string role)
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, userName),
-                new Claim(ClaimTypes.Role,role.ToLower())  // <-- Use ClaimTypes.Role here
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
+        
         [HttpGet("{userId:int}")]
         [Authorize(Roles = "user")]
         public async Task<IActionResult> GetUserById(int userId)
@@ -72,7 +39,7 @@ namespace HotelBookingApp.Controllers
         }
 
         [HttpGet("GetAllUsers")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "admin,user,hotelmanager")]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _userService.GetAllUsers();

@@ -58,10 +58,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // CREATE (Admin Only)
+        // CREATE (Admin & HotelManager)
         // ======================================
         [HttpPost]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Create([FromBody] CreateAmenityDto dto)
         {
             try
@@ -84,10 +84,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // UPDATE (Admin Only)
+        // UPDATE (Admin & HotelManager)
         // ======================================
         [HttpPut("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateAmenityDto dto)
         {
             try
@@ -110,10 +110,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // DELETE (Admin Only)
+        // DELETE (Admin & HotelManager)
         // ======================================
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Delete(int id)
         {
             try

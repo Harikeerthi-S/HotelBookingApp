@@ -79,8 +79,24 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "HotelBookingApp.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/Auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "HotelBookingApp.DTOs.User.LoginUserRequestDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "HotelBookingApp.Controllers.BookingController",
-    "Method": "Create",
+    "Method": "CreateBooking",
     "RelativePath": "api/Booking",
     "HttpMethod": "POST",
     "IsController": true,
@@ -96,7 +112,7 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.BookingController",
-    "Method": "GetById",
+    "Method": "GetBookingById",
     "RelativePath": "api/Booking/{bookingId}",
     "HttpMethod": "GET",
     "IsController": true,
@@ -112,9 +128,9 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.BookingController",
-    "Method": "Cancel",
+    "Method": "CancelBooking",
     "RelativePath": "api/Booking/{bookingId}/cancel",
-    "HttpMethod": "POST",
+    "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -128,9 +144,9 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.BookingController",
-    "Method": "Complete",
+    "Method": "CompleteBooking",
     "RelativePath": "api/Booking/{bookingId}/complete",
-    "HttpMethod": "POST",
+    "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -144,9 +160,25 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.BookingController",
-    "Method": "GetByHotel",
-    "RelativePath": "api/Booking/hotel/{hotelId}",
-    "HttpMethod": "GET",
+    "Method": "ConfirmBooking",
+    "RelativePath": "api/Booking/{bookingId}/confirm",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "bookingId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HotelBookingApp.Controllers.BookingController",
+    "Method": "GetBookingsByHotelPaged",
+    "RelativePath": "api/Booking/hotel/{hotelId}/paged",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -156,23 +188,18 @@
         "IsRequired": true
       },
       {
-        "Name": "PageNumber",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "PageSize",
-        "Type": "System.Int32",
-        "IsRequired": false
+        "Name": "pageRequest",
+        "Type": "HotelBookingApp.Models.Dtos.PagedRequestDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.BookingController",
-    "Method": "GetByUser",
-    "RelativePath": "api/Booking/user/{userId}",
-    "HttpMethod": "GET",
+    "Method": "GetBookingsByUserPaged",
+    "RelativePath": "api/Booking/user/{userId}/paged",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -182,14 +209,9 @@
         "IsRequired": true
       },
       {
-        "Name": "PageNumber",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "PageSize",
-        "Type": "System.Int32",
-        "IsRequired": false
+        "Name": "pageRequest",
+        "Type": "HotelBookingApp.Models.Dtos.PagedRequestDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -339,9 +361,9 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.CancellationController",
-    "Method": "GetByUser",
-    "RelativePath": "api/Cancellation/user/{userId}",
-    "HttpMethod": "GET",
+    "Method": "GetByUserPaged",
+    "RelativePath": "api/Cancellation/user/{userId}/paged",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -351,14 +373,9 @@
         "IsRequired": true
       },
       {
-        "Name": "PageNumber",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "PageSize",
-        "Type": "System.Int32",
-        "IsRequired": false
+        "Name": "pageRequest",
+        "Type": "HotelBookingApp.Models.Dtos.PagedRequestDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -462,19 +479,14 @@
     "ContainingType": "HotelBookingApp.Controllers.HotelController",
     "Method": "GetPaged",
     "RelativePath": "api/Hotel/paged",
-    "HttpMethod": "GET",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "PageNumber",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "PageSize",
-        "Type": "System.Int32",
-        "IsRequired": false
+        "Name": "request",
+        "Type": "HotelBookingApp.Models.Dtos.PagedRequestDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -692,16 +704,6 @@
   },
   {
     "ContainingType": "HotelBookingApp.Controllers.ReviewController",
-    "Method": "GetAll",
-    "RelativePath": "api/Review",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "HotelBookingApp.Controllers.ReviewController",
     "Method": "Create",
     "RelativePath": "api/Review",
     "HttpMethod": "POST",
@@ -744,6 +746,32 @@
         "Name": "id",
         "Type": "System.Int32",
         "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "HotelBookingApp.Controllers.ReviewController",
+    "Method": "GetReviewsPaged",
+    "RelativePath": "api/Review/paged",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "filter",
+        "Type": "HotelBookingApp.Models.Dtos.ReviewFilterDto",
+        "IsRequired": true
+      },
+      {
+        "Name": "PageNumber",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageSize",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -915,22 +943,6 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "HotelBookingApp.Controllers.UsersController",
-    "Method": "Login",
-    "RelativePath": "api/Users/login",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "request",
-        "Type": "HotelBookingApp.DTOs.User.LoginUserRequestDTO",
-        "IsRequired": true
-      }
-    ],
     "ReturnTypes": []
   },
   {

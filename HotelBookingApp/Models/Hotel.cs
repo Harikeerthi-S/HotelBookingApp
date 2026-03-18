@@ -9,6 +9,8 @@
         public string Address { get; set; } = string.Empty;
         public double StarRating { get; set; }
 
+        public int TotalRooms { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public string ContactNumber { get; set; } = string.Empty;

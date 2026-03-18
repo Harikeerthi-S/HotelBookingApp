@@ -1,45 +1,48 @@
 ﻿using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
+using HotelBookingAppWebApi.Interfaces;
 
 namespace HotelBookingApp.Services
 {
     public class WishlistService : IWishlistService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, Wishlist> _wishlistRepository;
+        private readonly IRepository<int, User> _userRepository;
+        private readonly IRepository<int, Hotel> _hotelRepository;
 
-        public WishlistService(HotelBookingContext context)
+        public WishlistService(
+            IRepository<int, Wishlist> wishlistRepository,
+            IRepository<int, User> userRepository,
+            IRepository<int, Hotel> hotelRepository)
         {
-            _context = context;
+            _wishlistRepository = wishlistRepository;
+            _userRepository = userRepository;
+            _hotelRepository = hotelRepository;
         }
 
-        // ==========================================
+        // =====================================
         // ADD TO WISHLIST
-        // ==========================================
+        // =====================================
         public async Task<WishlistResponseDto> AddToWishlistAsync(WishlistDto dto)
         {
             try
             {
-                // Validate User
-                var userExists = await _context.Users
-                    .AnyAsync(u => u.UserId == dto.UserId);
+                var user = await _userRepository.GetByIdAsync(dto.UserId);
+                if (user == null)
+                    throw new Exception("User not found");
 
-                if (!userExists)
-                    throw new Exception("User not found.");
+                var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId);
+                if (hotel == null)
+                    throw new Exception("Hotel not found");
 
-                // Validate Hotel
-                var hotelExists = await _context.Hotels
-                    .AnyAsync(h => h.HotelId == dto.HotelId);
+                var wishlistItems = await _wishlistRepository.GetAllAsync();
 
-                if (!hotelExists)
-                    throw new Exception("Hotel not found.");
+                var exists = wishlistItems.Any(w =>
+                    w.UserId == dto.UserId &&
+                    w.HotelId == dto.HotelId);
 
-                // Prevent duplicate wishlist entry
-                var alreadyExists = await _context.Wishlists
-                    .AnyAsync(w => w.UserId == dto.UserId && w.HotelId == dto.HotelId);
-
-                if (alreadyExists)
-                    throw new Exception("Hotel already exists in wishlist.");
+                if (exists)
+                    throw new Exception("Hotel already exists in wishlist");
 
                 var wishlist = new Wishlist
                 {
@@ -47,30 +50,31 @@ namespace HotelBookingApp.Services
                     HotelId = dto.HotelId
                 };
 
-                _context.Wishlists.Add(wishlist);
-                await _context.SaveChangesAsync();
+                var created = await _wishlistRepository.AddAsync(wishlist);
 
                 return new WishlistResponseDto
                 {
-                    WishlistId = wishlist.WishlistId,
-                    UserId = wishlist.UserId,
-                    HotelId = wishlist.HotelId
+                    WishlistId = created.WishlistId,
+                    UserId = created.UserId,
+                    HotelId = created.HotelId
                 };
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error adding to wishlist: {ex.Message}");
+                throw new Exception($"Error adding hotel to wishlist: {ex.Message}");
             }
         }
 
-        // ==========================================
+        // =====================================
         // GET USER WISHLIST
-        // ==========================================
+        // =====================================
         public async Task<IEnumerable<WishlistResponseDto>> GetUserWishlistAsync(int userId)
         {
             try
             {
-                return await _context.Wishlists
+                var wishlistItems = await _wishlistRepository.GetAllAsync();
+
+                return wishlistItems
                     .Where(w => w.UserId == userId)
                     .Select(w => new WishlistResponseDto
                     {
@@ -78,7 +82,7 @@ namespace HotelBookingApp.Services
                         UserId = w.UserId,
                         HotelId = w.HotelId
                     })
-                    .ToListAsync();
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -86,21 +90,17 @@ namespace HotelBookingApp.Services
             }
         }
 
-        // ==========================================
+        // =====================================
         // REMOVE BY WISHLIST ID
-        // ==========================================
+        // =====================================
         public async Task<bool> RemoveFromWishlistAsync(int wishlistId)
         {
             try
             {
-                var wishlist = await _context.Wishlists
-                    .FirstOrDefaultAsync(w => w.WishlistId == wishlistId);
+                var deleted = await _wishlistRepository.DeleteAsync(wishlistId);
 
-                if (wishlist == null)
+                if (deleted == null)
                     return false;
-
-                _context.Wishlists.Remove(wishlist);
-                await _context.SaveChangesAsync();
 
                 return true;
             }
@@ -110,21 +110,23 @@ namespace HotelBookingApp.Services
             }
         }
 
-        // ==========================================
-        // REMOVE BY USER + HOTEL (Safer Option)
-        // ==========================================
+        // =====================================
+        // REMOVE BY USER + HOTEL
+        // =====================================
         public async Task<bool> RemoveByUserAndHotelAsync(int userId, int hotelId)
         {
             try
             {
-                var wishlist = await _context.Wishlists
-                    .FirstOrDefaultAsync(w => w.UserId == userId && w.HotelId == hotelId);
+                var wishlistItems = await _wishlistRepository.GetAllAsync();
 
-                if (wishlist == null)
+                var item = wishlistItems.FirstOrDefault(w =>
+                    w.UserId == userId &&
+                    w.HotelId == hotelId);
+
+                if (item == null)
                     return false;
 
-                _context.Wishlists.Remove(wishlist);
-                await _context.SaveChangesAsync();
+                await _wishlistRepository.DeleteAsync(item.WishlistId);
 
                 return true;
             }

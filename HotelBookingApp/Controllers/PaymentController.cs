@@ -1,15 +1,13 @@
 ﻿using HotelBookingApp.Interfaces.InterfaceServices;
 using HotelBookingApp.Models.Dtos;
-using HotelBookingApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace HotelBookingApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // All endpoints require authentication
+    [Authorize]
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
@@ -20,7 +18,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // =====================================
-        // MAKE PAYMENT (Only User Role)
+        // MAKE PAYMENT (User Only)
         // =====================================
         [HttpPost]
         [Authorize(Roles = "user")]
@@ -46,10 +44,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // =====================================
-        // GET ALL PAYMENTS (Admin Only)
+        // GET ALL PAYMENTS (Admin + HotelManager)
         // =====================================
         [HttpGet]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> GetAllPayments()
         {
             try
@@ -68,10 +66,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // =====================================
-        // GET PAYMENT BY ID (Admin or User)
+        // GET PAYMENT BY ID (Admin, User, HotelManager)
         // =====================================
         [HttpGet("{id}")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "admin,user,hotelmanager")]
         public async Task<IActionResult> GetPaymentById(int id)
         {
             try

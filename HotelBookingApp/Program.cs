@@ -5,6 +5,7 @@ using HotelBookingApp.Interfaces.InterfaceServices;
 using HotelBookingApp.Models;
 using HotelBookingApp.Repositories;
 using HotelBookingApp.Services;
+using HotelBookingAppWebApi.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -67,7 +68,8 @@ builder.Services.AddScoped<ICancellationService, CancellationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IWishlistService, WishlistService>();
-
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
 
 
 

@@ -5,9 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HotelBookingApp.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // 🔐 All endpoints require authentication
+    [Route("api/[controller]")]
     public class ReviewController : ControllerBase
     {
         private readonly IReviewService _reviewService;
@@ -17,100 +16,91 @@ namespace HotelBookingApp.Controllers
             _reviewService = reviewService;
         }
 
-        // ===============================
-        // GET ALL REVIEWS
-        // ===============================
-        [HttpGet]
-        [Authorize(Roles = "admin,user")] 
-        public async Task<IActionResult> GetAll()
+        // =========================================
+        // GET PAGED + FILTERED REVIEWS (Admin, HotelManager)
+        // =========================================
+        [HttpPost("paged")]
+        [Authorize(Roles = "admin,hotelmanager")]
+        public async Task<IActionResult> GetReviewsPaged(
+            [FromBody] ReviewFilterDto filter,
+            [FromQuery] PagedRequestDto pagination)
         {
             try
             {
-                var reviews = await _reviewService.GetAllAsync();
+                var reviews = await _reviewService.GetReviewsPagedAsync(filter, pagination);
                 return Ok(reviews);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { Message = ex.Message });
             }
         }
 
-        // ===============================
-        // GET REVIEW BY ID
-        // ===============================
+        // =========================================
+        // GET REVIEW BY ID (All Roles)
+        // =========================================
         [HttpGet("{id}")]
+        [Authorize(Roles = "admin,hotelmanager,user")]
         public async Task<IActionResult> GetById(int id)
         {
             try
             {
                 var review = await _reviewService.GetByIdAsync(id);
-
                 if (review == null)
-                    return NotFound("Review not found.");
+                    return NotFound(new { Message = "Review not found." });
 
                 return Ok(review);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { Message = ex.Message });
             }
         }
 
-        // ===============================
-        // CREATE REVIEW
-        // ===============================
+        // =========================================
+        // CREATE REVIEW (User)
+        // =========================================
         [HttpPost]
-        [Authorize(Roles = "user")] // 🔐 Only User role can create review
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-
-                var createdReview = await _reviewService.CreateAsync(dto);
-
-                return CreatedAtAction(nameof(GetById),
-                    new { id = createdReview.ReviewId },
-                    createdReview);
+                var created = await _reviewService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.ReviewId }, created);
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { Message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
+                return NotFound(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { Message = ex.Message });
             }
         }
 
-        // ===============================
-        // DELETE REVIEW
-        // ===============================
+        // =========================================
+        // DELETE REVIEW (Admin, HotelManager)
+        // =========================================
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")] // 🔐 Only Admin can delete reviews
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
                 var deleted = await _reviewService.DeleteAsync(id);
-
                 if (!deleted)
-                    return NotFound("Review not found.");
+                    return NotFound(new { Message = "Review not found." });
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { Message = ex.Message });
             }
         }
     }

@@ -184,6 +184,9 @@ namespace HotelBookingApp.Migrations
                     b.Property<double>("StarRating")
                         .HasColumnType("float");
 
+                    b.Property<int>("TotalRooms")
+                        .HasColumnType("int");
+
                     b.HasKey("HotelId");
 
                     b.ToTable("Hotels");

@@ -1,16 +1,21 @@
-﻿using HotelBookingApp.Models;
+﻿using HotelBookingApp.Interfaces.InterfaceServices;
+using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
+using HotelBookingAppWebApi.Interfaces;
 
 namespace HotelBookingApp.Services
 {
     public class NotificationService : INotificationService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, Notification> _notificationRepository;
+        private readonly IRepository<int, User> _userRepository;
 
-        public NotificationService(HotelBookingContext context)
+        public NotificationService(
+            IRepository<int, Notification> notificationRepository,
+            IRepository<int, User> userRepository)
         {
-            _context = context;
+            _notificationRepository = notificationRepository;
+            _userRepository = userRepository;
         }
 
         // =====================================
@@ -20,34 +25,27 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                // Validate user exists
-                var userExists = await _context.Users
-                    .AnyAsync(u => u.UserId == dto.UserId);
-
-                if (!userExists)
-                    throw new Exception("User not found.");
-
-                if (string.IsNullOrWhiteSpace(dto.Message))
-                    throw new Exception("Notification message cannot be empty.");
+                var user = await _userRepository.GetByIdAsync(dto.UserId);
+                if (user == null) throw new Exception("User not found.");
+                if (string.IsNullOrWhiteSpace(dto.Message)) throw new Exception("Notification message cannot be empty.");
 
                 var notification = new Notification
                 {
                     UserId = dto.UserId,
                     Message = dto.Message,
-                    IsRead = false, // default unread
+                    IsRead = false,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+                var createdNotification = await _notificationRepository.AddAsync(notification);
 
                 return new NotificationResponseDto
                 {
-                    NotificationId = notification.NotificationId,
-                    UserId = notification.UserId,
-                    Message = notification.Message,
-                    IsRead = notification.IsRead,
-                    CreatedAt = notification.CreatedAt
+                    NotificationId = createdNotification.NotificationId,
+                    UserId = createdNotification.UserId,
+                    Message = createdNotification.Message,
+                    IsRead = createdNotification.IsRead,
+                    CreatedAt = createdNotification.CreatedAt
                 };
             }
             catch (Exception ex)
@@ -63,7 +61,8 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                return await _context.Notifications
+                var allNotifications = await _notificationRepository.GetAllAsync();
+                var userNotifications = allNotifications
                     .Where(n => n.UserId == userId)
                     .OrderByDescending(n => n.CreatedAt)
                     .Select(n => new NotificationResponseDto
@@ -73,8 +72,9 @@ namespace HotelBookingApp.Services
                         Message = n.Message,
                         IsRead = n.IsRead,
                         CreatedAt = n.CreatedAt
-                    })
-                    .ToListAsync();
+                    });
+
+                return userNotifications;
             }
             catch (Exception ex)
             {
@@ -89,11 +89,8 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var notification = await _context.Notifications
-                    .FirstOrDefaultAsync(n => n.NotificationId == notificationId);
-
-                if (notification == null)
-                    return null;
+                var notification = await _notificationRepository.GetByIdAsync(notificationId);
+                if (notification == null) return null;
 
                 return new NotificationResponseDto
                 {
@@ -117,18 +114,13 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var notification = await _context.Notifications
-                    .FirstOrDefaultAsync(n => n.NotificationId == notificationId);
-
-                if (notification == null)
-                    return false;
-
-                if (notification.IsRead)
-                    return true; // Already read
+                var notification = await _notificationRepository.GetByIdAsync(notificationId);
+                if (notification == null) return false;
+                if (notification.IsRead) return true;
 
                 notification.IsRead = true;
+                await _notificationRepository.UpdateAsync(notification.NotificationId, notification);
 
-                await _context.SaveChangesAsync();
                 return true;
             }
             catch (Exception ex)
@@ -144,16 +136,8 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var notification = await _context.Notifications
-                    .FirstOrDefaultAsync(n => n.NotificationId == notificationId);
-
-                if (notification == null)
-                    return false;
-
-                _context.Notifications.Remove(notification);
-                await _context.SaveChangesAsync();
-
-                return true;
+                var deleted = await _notificationRepository.DeleteAsync(notificationId);
+                return deleted != null;
             }
             catch (Exception ex)
             {

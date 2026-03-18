@@ -18,10 +18,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // GET ALL HOTEL AMENITIES
+        // GET ALL HOTEL AMENITIES (Admin or HotelManager)
         // ======================================
         [HttpGet]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> GetAll()
         {
             try
@@ -36,9 +36,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // GET BY ID
+        // GET BY ID (Admin or HotelManager)
         // ======================================
         [HttpGet("{id}")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -57,7 +58,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // CREATE HOTEL AMENITY
+        // CREATE HOTEL AMENITY (Admin Only)
         // ======================================
         [HttpPost]
         [Authorize(Roles = "admin")]
@@ -93,7 +94,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ======================================
-        // DELETE HOTEL AMENITY
+        // DELETE HOTEL AMENITY (Admin Only)
         // ======================================
         [HttpDelete("{id}")]
         [Authorize(Roles = "admin")]

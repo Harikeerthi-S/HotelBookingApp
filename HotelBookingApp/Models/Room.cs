@@ -6,6 +6,7 @@
         public int HotelId { get; set; }
         public int RoomNumber {  get; set; }
         public string RoomType { get; set; } = string.Empty;
+       
         public decimal PricePerNight { get; set; }
         public bool IsAvailable { get; set; } = true;
         public int Capacity { get; set; }

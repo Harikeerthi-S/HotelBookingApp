@@ -67,10 +67,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // GET NOTIFICATION BY ID (Admin or Owner)
+        // GET NOTIFICATION BY ID (Admin, User, HotelManager)
         // ==========================================
         [HttpGet("{id}")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "admin,user,hotelmanager")]
         public async Task<IActionResult> GetNotificationById(int id)
         {
             try
@@ -82,10 +82,10 @@ namespace HotelBookingApp.Controllers
                     return NotFound(new { message = "Notification not found." });
 
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-                var userRole = User.FindFirstValue(ClaimTypes.Role);
+                var userRole = User.FindFirstValue(ClaimTypes.Role)?.ToLower();
 
                 // If User role → allow only own notification
-                if (userRole == "User" && notification.UserId != userId)
+                if (userRole == "user" && notification.UserId != userId)
                     return Forbid();
 
                 return Ok(notification);
@@ -120,7 +120,7 @@ namespace HotelBookingApp.Controllers
                 if (notification.UserId != userId)
                     return Forbid();
 
-                var result = await _notificationService.MarkAsReadAsync(id);
+                await _notificationService.MarkAsReadAsync(id);
 
                 return Ok(new { message = "Notification marked as read." });
             }
@@ -150,12 +150,12 @@ namespace HotelBookingApp.Controllers
                     return NotFound(new { message = "Notification not found." });
 
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-                var userRole = User.FindFirstValue(ClaimTypes.Role);
+                var userRole = User.FindFirstValue(ClaimTypes.Role)?.ToLower();
 
-                if (userRole == "User" && notification.UserId != userId)
+                if (userRole == "user" && notification.UserId != userId)
                     return Forbid();
 
-                var result = await _notificationService.DeleteNotificationAsync(id);
+                await _notificationService.DeleteNotificationAsync(id);
 
                 return Ok(new { message = "Notification deleted successfully." });
             }

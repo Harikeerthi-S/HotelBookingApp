@@ -5,6 +5,9 @@
         public int UserId { get; set; }
         public int HotelId { get; set; }
         public int RoomId { get; set; }
+
+        public int NumberOfRooms { get; set; }
+
         public DateTime CheckIn { get; set; }
         public DateTime CheckOut { get; set; }
     }

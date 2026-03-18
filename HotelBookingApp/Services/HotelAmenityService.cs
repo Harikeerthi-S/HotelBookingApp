@@ -1,31 +1,35 @@
 ﻿using HotelBookingApp.Interfaces.InterfaceServices;
 using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
+using HotelBookingAppWebApi.Interfaces;
 
 namespace HotelBookingApp.Services
 {
     public class HotelAmenityService : IHotelAmenityService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, HotelAmenity> _hotelAmenityRepository;
+        private readonly IRepository<int, Hotel> _hotelRepository;
+        private readonly IRepository<int, Amenity> _amenityRepository;
 
-        public HotelAmenityService(HotelBookingContext context)
+        public HotelAmenityService(
+            IRepository<int, HotelAmenity> hotelAmenityRepository,
+            IRepository<int, Hotel> hotelRepository,
+            IRepository<int, Amenity> amenityRepository)
         {
-            _context = context;
+            _hotelAmenityRepository = hotelAmenityRepository ?? throw new ArgumentNullException(nameof(hotelAmenityRepository));
+            _hotelRepository = hotelRepository ?? throw new ArgumentNullException(nameof(hotelRepository));
+            _amenityRepository = amenityRepository ?? throw new ArgumentNullException(nameof(amenityRepository));
         }
 
-        // ======================================
-        // GET ALL
-        // ======================================
+        // ===============================
+        // GET ALL HOTEL AMENITIES
+        // ===============================
         public async Task<IEnumerable<HotelAmenityResponseDto>> GetAllAsync()
         {
             try
             {
-                var data = await _context.HotelAmenities
-                    .AsNoTracking()
-                    .ToListAsync();
-
-                return data.Select(ha => new HotelAmenityResponseDto
+                var allAmenities = await _hotelAmenityRepository.GetAllAsync();
+                return allAmenities.Select(ha => new HotelAmenityResponseDto
                 {
                     HotelAmenityId = ha.HotelAmenityId,
                     HotelId = ha.HotelId,
@@ -38,70 +42,15 @@ namespace HotelBookingApp.Services
             }
         }
 
-        // ======================================
-        // GET BY ID
-        // ======================================
+        // ===============================
+        // GET HOTEL AMENITY BY ID
+        // ===============================
         public async Task<HotelAmenityResponseDto?> GetByIdAsync(int id)
         {
             try
             {
-                var ha = await _context.HotelAmenities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.HotelAmenityId == id);
-
-                if (ha == null)
-                    return null;
-
-                return new HotelAmenityResponseDto
-                {
-                    HotelAmenityId = ha.HotelAmenityId,
-                    HotelId = ha.HotelId,
-                    AmenityId = ha.AmenityId
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error retrieving HotelAmenity with ID {id}.", ex);
-            }
-        }
-
-        // ======================================
-        // CREATE (BUSINESS LOGIC)
-        // ======================================
-        public async Task<HotelAmenityResponseDto> CreateAsync(HotelAmenityDto dto)
-        {
-            try
-            {
-                // 🔹 1. Validate Hotel Exists
-                var hotelExists = await _context.Hotels
-                    .AnyAsync(h => h.HotelId == dto.HotelId);
-
-                if (!hotelExists)
-                    throw new KeyNotFoundException("Hotel not found.");
-
-                // 🔹 2. Validate Amenity Exists
-                var amenityExists = await _context.Amenities
-                    .AnyAsync(a => a.AmenityId == dto.AmenityId);
-
-                if (!amenityExists)
-                    throw new KeyNotFoundException("Amenity not found.");
-
-                // 🔹 3. Prevent Duplicate Mapping
-                var alreadyExists = await _context.HotelAmenities
-                    .AnyAsync(x => x.HotelId == dto.HotelId &&
-                                   x.AmenityId == dto.AmenityId);
-
-                if (alreadyExists)
-                    throw new InvalidOperationException("This amenity is already assigned to the hotel.");
-
-                var entity = new HotelAmenity
-                {
-                    HotelId = dto.HotelId,
-                    AmenityId = dto.AmenityId
-                };
-
-                _context.HotelAmenities.Add(entity);
-                await _context.SaveChangesAsync();
+                var entity = await _hotelAmenityRepository.GetByIdAsync(id);
+                if (entity == null) return null;
 
                 return new HotelAmenityResponseDto
                 {
@@ -112,27 +61,66 @@ namespace HotelBookingApp.Services
             }
             catch (Exception ex)
             {
+                throw new Exception($"Error retrieving HotelAmenity with ID {id}.", ex);
+            }
+        }
+
+        // ===============================
+        // CREATE HOTEL AMENITY
+        // ===============================
+        public async Task<HotelAmenityResponseDto> CreateAsync(HotelAmenityDto dto)
+        {
+            try
+            {
+                if (dto == null) throw new ArgumentNullException(nameof(dto));
+
+                // Validate hotel exists
+                var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId)
+                             ?? throw new KeyNotFoundException("Hotel not found.");
+
+                // Validate amenity exists
+                var amenity = await _amenityRepository.GetByIdAsync(dto.AmenityId)
+                              ?? throw new KeyNotFoundException("Amenity not found.");
+
+                // Prevent duplicate mapping
+                var allHotelAmenities = await _hotelAmenityRepository.GetAllAsync();
+                if (allHotelAmenities.Any(x => x.HotelId == dto.HotelId && x.AmenityId == dto.AmenityId))
+                    throw new InvalidOperationException("This amenity is already assigned to the hotel.");
+
+                var entity = new HotelAmenity
+                {
+                    HotelId = dto.HotelId,
+                    AmenityId = dto.AmenityId
+                };
+
+                var created = await _hotelAmenityRepository.AddAsync(entity);
+
+                return new HotelAmenityResponseDto
+                {
+                    HotelAmenityId = created.HotelAmenityId,
+                    HotelId = created.HotelId,
+                    AmenityId = created.AmenityId
+                };
+            }
+            catch (Exception ex)
+            {
                 throw new Exception("Error creating hotel amenity.", ex);
             }
         }
 
-        // ======================================
-        // DELETE
-        // ======================================
+        // ===============================
+        // DELETE HOTEL AMENITY
+        // ===============================
         public async Task<bool> DeleteAsync(int id)
         {
             try
             {
-                var entity = await _context.HotelAmenities
-                    .FirstOrDefaultAsync(x => x.HotelAmenityId == id);
+                var entity = await _hotelAmenityRepository.GetByIdAsync(id);
+                if (entity == null) return false;
 
-                if (entity == null)
-                    return false;
+                await _hotelAmenityRepository.DeleteAsync(id);
 
-                _context.HotelAmenities.Remove(entity);
-                await _context.SaveChangesAsync();
-
-                return true;
+                return true; // return true if deleted
             }
             catch (Exception ex)
             {

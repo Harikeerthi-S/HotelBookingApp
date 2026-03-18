@@ -17,7 +17,7 @@ namespace HotelBookingApp.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Create([FromBody] CreateRoomDto dto)
         {
             try
@@ -56,7 +56,7 @@ namespace HotelBookingApp.Controllers
         }
 
         [HttpPut("{roomId:int}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Update(int roomId, [FromBody] CreateRoomDto dto)
         {
             try
@@ -71,7 +71,7 @@ namespace HotelBookingApp.Controllers
         }
 
         [HttpDelete("{roomId:int}")]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin,hotelmanager")]
         public async Task<IActionResult> Deactivate(int roomId)
         {
             try

@@ -1,196 +1,277 @@
-﻿using HotelBookingApp.Models;
+﻿using HotelBookingApp.Interfaces.InterfaceServices;
+using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
+using HotelBookingAppWebApi.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HotelBookingApp.Services
 {
     public class BookingService : IBookingService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, Booking> _bookingRepository;
+        private readonly IRepository<int, Hotel> _hotelRepository;
+        private readonly IRepository<int, Room> _roomRepository;
 
-        public BookingService(HotelBookingContext context)
+        public BookingService(
+            IRepository<int, Booking> bookingRepository,
+            IRepository<int, Hotel> hotelRepository,
+            IRepository<int, Room> roomRepository)
         {
-            _context = context;
+            _bookingRepository = bookingRepository ?? throw new ArgumentNullException(nameof(bookingRepository));
+            _hotelRepository = hotelRepository ?? throw new ArgumentNullException(nameof(hotelRepository));
+            _roomRepository = roomRepository ?? throw new ArgumentNullException(nameof(roomRepository));
         }
 
-        // Create a new booking
+        // CREATE BOOKING
         public async Task<BookingResponseDto> CreateBookingAsync(CreateBookingDto dto)
         {
-            // Ensure at least 1-night stay
-            if (dto.CheckOut <= dto.CheckIn)
-                throw new ArgumentException("Check-out date must be after check-in date.");
-
-            // Check if hotel exists and is active
-            var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == dto.HotelId && h.IsActive);
-            if (hotel == null) throw new InvalidOperationException("Hotel does not exist or is inactive.");
-
-            // Check if room exists and is available
-            var room = await _context.Rooms.FirstOrDefaultAsync(r => r.RoomId == dto.RoomId && r.IsAvailable);
-            if (room == null) throw new InvalidOperationException("Room does not exist or is not available.");
-
-            // Check for overlapping bookings
-            var overlappingBooking = await _context.Bookings
-                .AnyAsync(b => b.RoomId == dto.RoomId &&
-                               ((dto.CheckIn >= b.CheckIn && dto.CheckIn < b.CheckOut) ||
-                                (dto.CheckOut > b.CheckIn && dto.CheckOut <= b.CheckOut) ||
-                                (dto.CheckIn <= b.CheckIn && dto.CheckOut >= b.CheckOut)));
-
-            if (overlappingBooking)
-                throw new InvalidOperationException("Room is already booked for the selected dates.");
-
-            // Calculate total amount
-            var totalDays = (decimal)(dto.CheckOut - dto.CheckIn).TotalDays;
-            var totalAmount = totalDays * room.PricePerNight;
-
-            // Create booking
-            var booking = new Booking
+            try
             {
-                UserId = dto.UserId,
-                HotelId = dto.HotelId,
-                RoomId = dto.RoomId,
-                CheckIn = dto.CheckIn,
-                CheckOut = dto.CheckOut,
-                TotalAmount = totalAmount,
-                Status = "Confirmed"
-            };
+                if (dto == null) throw new ArgumentNullException(nameof(dto));
 
-            _context.Bookings.Add(booking);
-            await _context.SaveChangesAsync();
+                var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId);
+                if (hotel == null || !hotel.IsActive) throw new InvalidOperationException("Hotel not found.");
 
-            return new BookingResponseDto
-            {
-                BookingId = booking.BookingId,
-                UserId = booking.UserId,
-                HotelId = booking.HotelId,
-                RoomId = booking.RoomId,
-                CheckIn = booking.CheckIn,
-                CheckOut = booking.CheckOut,
-                TotalAmount = booking.TotalAmount,
-                Status = booking.Status
-            };
-        }
+                var room = await _roomRepository.GetByIdAsync(dto.RoomId);
+                if (room == null) throw new InvalidOperationException("Room not found.");
 
-        // Get booking by ID
-        public async Task<BookingResponseDto?> GetBookingByIdAsync(int bookingId)
-        {
-            var booking = await _context.Bookings.AsNoTracking()
-                .FirstOrDefaultAsync(b => b.BookingId == bookingId);
+                if (dto.CheckOut <= dto.CheckIn) throw new InvalidOperationException("Check-out must be after check-in.");
 
-            if (booking == null) return null;
+                var totalAmount = (decimal)(dto.CheckOut - dto.CheckIn).TotalDays * room.PricePerNight * dto.NumberOfRooms;
 
-            return new BookingResponseDto
-            {
-                BookingId = booking.BookingId,
-                UserId = booking.UserId,
-                HotelId = booking.HotelId,
-                RoomId = booking.RoomId,
-                CheckIn = booking.CheckIn,
-                CheckOut = booking.CheckOut,
-                TotalAmount = booking.TotalAmount,
-                Status = booking.Status
-            };
-        }
-
-        // Get bookings for a user with pagination
-        public async Task<PagedResponseDto<BookingResponseDto>> GetBookingsByUserAsync(int userId, PagedRequestDto pageRequest)
-        {
-            if (pageRequest.PageNumber <= 0) pageRequest.PageNumber = 1;
-            if (pageRequest.PageSize <= 0) pageRequest.PageSize = 10;
-
-            var query = _context.Bookings.AsNoTracking().Where(b => b.UserId == userId);
-            var totalRecords = await query.CountAsync();
-
-            var bookings = await query.OrderByDescending(b => b.CheckIn)
-                .Skip((pageRequest.PageNumber - 1) * pageRequest.PageSize)
-                .Take(pageRequest.PageSize)
-                .Select(b => new BookingResponseDto
+                var booking = new Booking
                 {
-                    BookingId = b.BookingId,
-                    UserId = b.UserId,
-                    HotelId = b.HotelId,
-                    RoomId = b.RoomId,
-                    CheckIn = b.CheckIn,
-                    CheckOut = b.CheckOut,
-                    TotalAmount = b.TotalAmount,
-                    Status = b.Status
-                })
-                .ToListAsync();
+                    UserId = dto.UserId,
+                    HotelId = dto.HotelId,
+                    RoomId = dto.RoomId,
+                    CheckIn = dto.CheckIn,
+                    CheckOut = dto.CheckOut,
+                    TotalAmount = totalAmount,
+                    Status = "Pending"
+                };
 
-            return new PagedResponseDto<BookingResponseDto>
-            {
-                Data = bookings,
-                PageNumber = pageRequest.PageNumber,
-                PageSize = pageRequest.PageSize,
-                TotalRecords = totalRecords
-            };
-        }
+                await _bookingRepository.AddAsync(booking);
 
-        // Get bookings for a hotel with pagination
-        public async Task<PagedResponseDto<BookingResponseDto>> GetBookingsByHotelAsync(int hotelId, PagedRequestDto pageRequest)
-        {
-            if (pageRequest.PageNumber <= 0) pageRequest.PageNumber = 1;
-            if (pageRequest.PageSize <= 0) pageRequest.PageSize = 10;
-
-            var query = _context.Bookings.AsNoTracking().Where(b => b.HotelId == hotelId);
-            var totalRecords = await query.CountAsync();
-
-            var bookings = await query.OrderByDescending(b => b.CheckIn)
-                .Skip((pageRequest.PageNumber - 1) * pageRequest.PageSize)
-                .Take(pageRequest.PageSize)
-                .Select(b => new BookingResponseDto
+                return new BookingResponseDto
                 {
-                    BookingId = b.BookingId,
-                    UserId = b.UserId,
-                    HotelId = b.HotelId,
-                    RoomId = b.RoomId,
-                    CheckIn = b.CheckIn,
-                    CheckOut = b.CheckOut,
-                    TotalAmount = b.TotalAmount,
-                    Status = b.Status
-                })
-                .ToListAsync();
-
-            return new PagedResponseDto<BookingResponseDto>
+                    BookingId = booking.BookingId,
+                    UserId = booking.UserId,
+                    HotelId = booking.HotelId,
+                    HotelName = hotel.HotelName,
+                    RoomId = booking.RoomId,
+                    NumberOfRooms = dto.NumberOfRooms,
+                    CheckIn = booking.CheckIn,
+                    CheckOut = booking.CheckOut,
+                    TotalAmount = booking.TotalAmount,
+                    Status = booking.Status
+                };
+            }
+            catch (Exception ex)
             {
-                Data = bookings,
-                PageNumber = pageRequest.PageNumber,
-                PageSize = pageRequest.PageSize,
-                TotalRecords = totalRecords
-            };
+                // Replace Console.WriteLine with your logging mechanism
+                Console.WriteLine($"Error in CreateBookingAsync: {ex.Message}");
+                throw;
+            }
         }
 
-        // Cancel a booking
-        public async Task<bool> CancelBookingAsync(int bookingId)
+        // CONFIRM BOOKING
+        public async Task<BookingResponseDto> ConfirmBookingAsync(int bookingId)
         {
-            var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingId == bookingId);
-            if (booking == null) return false;
+            try
+            {
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null) throw new InvalidOperationException("Booking not found.");
 
-            if (booking.Status != "Confirmed")
-                throw new InvalidOperationException($"Booking cannot be cancelled because its status is '{booking.Status}'.");
+                booking.Status = "Confirmed";
+                await _bookingRepository.UpdateAsync(bookingId, booking);
 
-            booking.Status = "Cancelled";
-            await _context.SaveChangesAsync();
-            return true;
+                var hotel = await _hotelRepository.GetByIdAsync(booking.HotelId);
+                return MapToBookingDto(booking, 1, hotel?.HotelName ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ConfirmBookingAsync: {ex.Message}");
+                throw;
+            }
         }
 
-        // Complete a booking
+        // COMPLETE BOOKING
         public async Task<BookingResponseDto> CompleteBookingAsync(int bookingId)
         {
-            var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingId == bookingId);
-            if (booking == null) throw new InvalidOperationException("Booking not found.");
+            try
+            {
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null) throw new InvalidOperationException("Booking not found.");
 
-            if (booking.Status != "Confirmed")
-                throw new InvalidOperationException($"Booking cannot be completed because its status is '{booking.Status}'.");
+                booking.Status = "Completed";
+                await _bookingRepository.UpdateAsync(bookingId, booking);
 
-            booking.Status = "Completed";
-            await _context.SaveChangesAsync();
+                var hotel = await _hotelRepository.GetByIdAsync(booking.HotelId);
+                return MapToBookingDto(booking, 1, hotel?.HotelName ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CompleteBookingAsync: {ex.Message}");
+                throw;
+            }
+        }
 
+        // CANCEL BOOKING
+        public async Task<bool> CancelBookingAsync(int bookingId)
+        {
+            try
+            {
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null) return false;
+
+                booking.Status = "Cancelled";
+                await _bookingRepository.UpdateAsync(bookingId, booking);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CancelBookingAsync: {ex.Message}");
+                return false;
+            }
+        }
+
+        // GET BOOKING BY ID
+        public async Task<BookingResponseDto?> GetBookingByIdAsync(int bookingId)
+        {
+            try
+            {
+                var booking = await _bookingRepository.GetByIdAsync(bookingId);
+                if (booking == null) return null;
+
+                var hotel = await _hotelRepository.GetByIdAsync(booking.HotelId);
+                return MapToBookingDto(booking, 1, hotel?.HotelName ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetBookingByIdAsync: {ex.Message}");
+                return null;
+            }
+        }
+
+        // GET BOOKINGS BY USER WITH PAGINATION
+        public async Task<PagedResponseDto<BookingResponseDto>> GetBookingsByUserAsync(int userId, PagedRequestDto request)
+        {
+            try
+            {
+                if (request.PageNumber <= 0) request.PageNumber = 1;
+                if (request.PageSize <= 0) request.PageSize = 10;
+
+                var allBookings = await _bookingRepository.GetAllAsync();
+                var filtered = allBookings.Where(b => b.UserId == userId).ToList();
+                var total = filtered.Count;
+
+                var paged = filtered
+                    .OrderByDescending(b => b.CheckIn)
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToList();
+
+                var data = new List<BookingResponseDto>();
+
+                foreach (var booking in paged)
+                {
+                    var hotel = await _hotelRepository.GetByIdAsync(booking.HotelId);
+                    data.Add(MapToBookingDto(booking, 1, hotel?.HotelName ?? string.Empty));
+                }
+
+                return new PagedResponseDto<BookingResponseDto>
+                {
+                    Data = data,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize,
+                    TotalRecords = total
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetBookingsByUserAsync: {ex.Message}");
+                throw;
+            }
+        }
+
+        // GET BOOKINGS BY HOTEL WITH PAGINATION
+        public async Task<PagedResponseDto<BookingResponseDto>> GetBookingsByHotelAsync(int hotelId, PagedRequestDto request)
+        {
+            try
+            {
+                if (request.PageNumber <= 0) request.PageNumber = 1;
+                if (request.PageSize <= 0) request.PageSize = 10;
+
+                var allBookings = await _bookingRepository.GetAllAsync();
+                var filtered = allBookings.Where(b => b.HotelId == hotelId).ToList();
+                var total = filtered.Count;
+
+                var paged = filtered
+                    .OrderByDescending(b => b.CheckIn)
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToList();
+
+                var data = new List<BookingResponseDto>();
+
+                foreach (var booking in paged)
+                {
+                    var hotel = await _hotelRepository.GetByIdAsync(booking.HotelId);
+                    data.Add(MapToBookingDto(booking, 1, hotel?.HotelName ?? string.Empty));
+                }
+
+                return new PagedResponseDto<BookingResponseDto>
+                {
+                    Data = data,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize,
+                    TotalRecords = total
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetBookingsByHotelAsync: {ex.Message}");
+                throw;
+            }
+        }
+
+        // GET PENDING BOOKINGS FOR HOTEL
+        public async Task<List<BookingResponseDto>> GetPendingBookingsForHotelAsync(int hotelId)
+        {
+            try
+            {
+                var allBookings = await _bookingRepository.GetAllAsync();
+                var pendingBookings = allBookings.Where(b => b.HotelId == hotelId && b.Status == "Pending").ToList();
+
+                var result = new List<BookingResponseDto>();
+                foreach (var booking in pendingBookings)
+                {
+                    var hotel = await _hotelRepository.GetByIdAsync(booking.HotelId);
+                    result.Add(MapToBookingDto(booking, 1, hotel?.HotelName ?? string.Empty));
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetPendingBookingsForHotelAsync: {ex.Message}");
+                throw;
+            }
+        }
+
+        // HELPER: Map Booking to DTO
+        private static BookingResponseDto MapToBookingDto(Booking booking, int numberOfRooms, string hotelName)
+        {
             return new BookingResponseDto
             {
                 BookingId = booking.BookingId,
                 UserId = booking.UserId,
                 HotelId = booking.HotelId,
+                HotelName = hotelName,
                 RoomId = booking.RoomId,
+                NumberOfRooms = numberOfRooms,
                 CheckIn = booking.CheckIn,
                 CheckOut = booking.CheckOut,
                 TotalAmount = booking.TotalAmount,

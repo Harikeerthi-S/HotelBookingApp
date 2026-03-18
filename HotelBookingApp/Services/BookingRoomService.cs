@@ -1,122 +1,151 @@
 ﻿using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
-
+using HotelBookingApp.Repositories;
+using HotelBookingAppWebApi.Interfaces;
 namespace HotelBookingApp.Services
 {
     public class BookingRoomService : IBookingRoomService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, BookingRoom> _bookingRoomRepo;
+        private readonly IRepository<int, Booking> _bookingRepo;
+        private readonly IRepository<int, Room> _roomRepo;
 
-        public BookingRoomService(HotelBookingContext context)
+        public BookingRoomService(
+            IRepository<int, BookingRoom> bookingRoomRepo,
+            IRepository<int, Booking> bookingRepo,
+            IRepository<int, Room> roomRepo)
         {
-            _context = context;
+            _bookingRoomRepo = bookingRoomRepo ?? throw new ArgumentNullException(nameof(bookingRoomRepo));
+            _bookingRepo = bookingRepo ?? throw new ArgumentNullException(nameof(bookingRepo));
+            _roomRepo = roomRepo ?? throw new ArgumentNullException(nameof(roomRepo));
         }
 
         public async Task<BookingRoomResponseDto> CreateBookingRoomAsync(CreateBookingRoomDto dto)
         {
-            var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingId == dto.BookingId);
-            if (booking == null)
-                throw new InvalidOperationException("Booking not found.");
-
-            var room = await _context.Rooms.FirstOrDefaultAsync(r => r.RoomId == dto.RoomId);
-            if (room == null)
-                throw new InvalidOperationException("Room not found.");
-
-            if (!room.IsAvailable)
-                throw new InvalidOperationException("Room is not available for booking.");
-
-            var bookingRoom = new BookingRoom
+            try
             {
-                BookingId = dto.BookingId,
-                RoomId = dto.RoomId,
-                PricePerNight = dto.PricePerNight,
-                NumberOfRooms = dto.NumberOfRooms
-            };
+                var booking = await _bookingRepo.GetByIdAsync(dto.BookingId);
+                if (booking == null) throw new InvalidOperationException("Booking not found.");
 
-            _context.BookingRooms.Add(bookingRoom);
-            await _context.SaveChangesAsync();
+                var room = await _roomRepo.GetByIdAsync(dto.RoomId);
+                if (room == null || !room.IsAvailable)
+                    throw new InvalidOperationException("Room not found or not available.");
 
-            return new BookingRoomResponseDto
+                var entity = new BookingRoom
+                {
+                    BookingId = dto.BookingId,
+                    RoomId = dto.RoomId,
+                    PricePerNight = dto.PricePerNight,
+                    NumberOfRooms = dto.NumberOfRooms
+                };
+
+                var created = await _bookingRoomRepo.AddAsync(entity);
+
+                return new BookingRoomResponseDto
+                {
+                    BookingRoomId = created.BookingRoomId,
+                    BookingId = created.BookingId,
+                    RoomId = created.RoomId,
+                    PricePerNight = created.PricePerNight,
+                    NumberOfRooms = created.NumberOfRooms
+                };
+            }
+            catch (Exception ex)
             {
-                BookingRoomId = bookingRoom.BookingRoomId,
-                BookingId = bookingRoom.BookingId,
-                RoomId = bookingRoom.RoomId,
-                PricePerNight = bookingRoom.PricePerNight,
-                NumberOfRooms = bookingRoom.NumberOfRooms
-            };
+                throw new Exception($"Error creating booking room: {ex.Message}", ex);
+            }
         }
 
         public async Task<BookingRoomResponseDto?> GetBookingRoomByIdAsync(int bookingRoomId)
         {
-            var br = await _context.BookingRooms.AsNoTracking()
-                .FirstOrDefaultAsync(b => b.BookingRoomId == bookingRoomId);
-
-            if (br == null) return null;
-
-            return new BookingRoomResponseDto
+            try
             {
-                BookingRoomId = br.BookingRoomId,
-                BookingId = br.BookingId,
-                RoomId = br.RoomId,
-                PricePerNight = br.PricePerNight,
-                NumberOfRooms = br.NumberOfRooms
-            };
+                var br = await _bookingRoomRepo.GetByIdAsync(bookingRoomId);
+                if (br == null) return null;
+
+                return new BookingRoomResponseDto
+                {
+                    BookingRoomId = br.BookingRoomId,
+                    BookingId = br.BookingId,
+                    RoomId = br.RoomId,
+                    PricePerNight = br.PricePerNight,
+                    NumberOfRooms = br.NumberOfRooms
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving booking room with ID {bookingRoomId}: {ex.Message}", ex);
+            }
         }
 
         public async Task<IEnumerable<BookingRoomResponseDto>> GetBookingRoomsByBookingIdAsync(int bookingId)
         {
-            var list = await _context.BookingRooms
-                .Where(b => b.BookingId == bookingId)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return list.Select(br => new BookingRoomResponseDto
+            try
             {
-                BookingRoomId = br.BookingRoomId,
-                BookingId = br.BookingId,
-                RoomId = br.RoomId,
-                PricePerNight = br.PricePerNight,
-                NumberOfRooms = br.NumberOfRooms
-            });
+                var list = await _bookingRoomRepo.GetAllAsync();
+                var filtered = list.Where(br => br.BookingId == bookingId);
+
+                return filtered.Select(br => new BookingRoomResponseDto
+                {
+                    BookingRoomId = br.BookingRoomId,
+                    BookingId = br.BookingId,
+                    RoomId = br.RoomId,
+                    PricePerNight = br.PricePerNight,
+                    NumberOfRooms = br.NumberOfRooms
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving booking rooms for booking ID {bookingId}: {ex.Message}", ex);
+            }
         }
 
         public async Task<BookingRoomResponseDto?> UpdateBookingRoomAsync(int bookingRoomId, CreateBookingRoomDto dto)
         {
-            var br = await _context.BookingRooms.FirstOrDefaultAsync(b => b.BookingRoomId == bookingRoomId);
-            if (br == null) return null;
-
-            var room = await _context.Rooms.FirstOrDefaultAsync(r => r.RoomId == dto.RoomId);
-            if (room == null)
-                throw new InvalidOperationException("Room not found.");
-
-            if (!room.IsAvailable)
-                throw new InvalidOperationException("Room is not available.");
-
-            br.RoomId = dto.RoomId;
-            br.PricePerNight = dto.PricePerNight;
-            br.NumberOfRooms = dto.NumberOfRooms;
-
-            await _context.SaveChangesAsync();
-
-            return new BookingRoomResponseDto
+            try
             {
-                BookingRoomId = br.BookingRoomId,
-                BookingId = br.BookingId,
-                RoomId = br.RoomId,
-                PricePerNight = br.PricePerNight,
-                NumberOfRooms = br.NumberOfRooms
-            };
+                var br = await _bookingRoomRepo.GetByIdAsync(bookingRoomId);
+                if (br == null) return null;
+
+                var room = await _roomRepo.GetByIdAsync(dto.RoomId);
+                if (room == null || !room.IsAvailable)
+                    throw new InvalidOperationException("Room not found or not available.");
+
+                br.RoomId = dto.RoomId;
+                br.PricePerNight = dto.PricePerNight;
+                br.NumberOfRooms = dto.NumberOfRooms;
+
+                var updated = await _bookingRoomRepo.UpdateAsync(bookingRoomId, br);
+
+                return new BookingRoomResponseDto
+                {
+                    BookingRoomId = updated.BookingRoomId,
+                    BookingId = updated.BookingId,
+                    RoomId = updated.RoomId,
+                    PricePerNight = updated.PricePerNight,
+                    NumberOfRooms = updated.NumberOfRooms
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating booking room with ID {bookingRoomId}: {ex.Message}", ex);
+            }
         }
 
         public async Task<bool> DeleteBookingRoomAsync(int bookingRoomId)
         {
-            var br = await _context.BookingRooms.FirstOrDefaultAsync(b => b.BookingRoomId == bookingRoomId);
-            if (br == null) return false;
+            try
+            {
+                var br = await _bookingRoomRepo.GetByIdAsync(bookingRoomId);
+                if (br == null) return false;
 
-            _context.BookingRooms.Remove(br);
-            await _context.SaveChangesAsync();
-            return true;
+                await _bookingRoomRepo.DeleteAsync(bookingRoomId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error deleting booking room with ID {bookingRoomId}: {ex.Message}", ex);
+            }
         }
     }
 }

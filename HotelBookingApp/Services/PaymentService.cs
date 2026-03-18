@@ -1,17 +1,21 @@
 ﻿using HotelBookingApp.Interfaces.InterfaceServices;
 using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
+using HotelBookingAppWebApi.Interfaces;
 
 namespace HotelBookingApp.Services
 {
     public class PaymentService : IPaymentService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, Booking> _bookingRepository;
+        private readonly IRepository<int, Payment> _paymentRepository;
 
-        public PaymentService(HotelBookingContext context)
+        public PaymentService(
+            IRepository<int, Booking> bookingRepository,
+            IRepository<int, Payment> paymentRepository)
         {
-            _context = context;
+            _bookingRepository = bookingRepository;
+            _paymentRepository = paymentRepository;
         }
 
         // ===============================
@@ -21,46 +25,22 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var booking = await _context.Bookings.FindAsync(paymentDto.BookingId);
-
-                if (booking == null)
-                    throw new Exception("Booking not found.");
-
-                if (paymentDto.Amount <= 0)
-                    throw new Exception("Payment amount must be greater than zero.");
-
-                if (string.IsNullOrWhiteSpace(paymentDto.PaymentMethod))
-                    throw new Exception("Payment method is required.");
+                var booking = await _bookingRepository.GetByIdAsync(paymentDto.BookingId);
+                if (booking == null) throw new Exception("Booking not found.");
+                if (paymentDto.Amount <= 0) throw new Exception("Payment amount must be greater than zero.");
+                if (string.IsNullOrWhiteSpace(paymentDto.PaymentMethod)) throw new Exception("Payment method is required.");
 
                 string paymentStatus;
 
-                // Business logic for payment method
-                if (paymentDto.PaymentMethod == "CreditCard" ||
-                    paymentDto.PaymentMethod == "DebitCard")
-                {
-                    // Assume card payments are processed instantly
+                if (paymentDto.PaymentMethod == "CreditCard" || paymentDto.PaymentMethod == "DebitCard")
                     paymentStatus = "Completed";
-                }
-                else if (paymentDto.PaymentMethod == "UPI" ||
-                         paymentDto.PaymentMethod == "Wallet")
-                {
+                else if (paymentDto.PaymentMethod == "UPI" || paymentDto.PaymentMethod == "Wallet" || paymentDto.PaymentMethod == "PayPal")
                     paymentStatus = "Pending";
-                }
-                else if (paymentDto.PaymentMethod == "PayPal")
-                {
-                    paymentStatus = "Pending";
-                }
                 else
-                {
                     throw new Exception("Invalid payment method.");
-                }
 
-                // Additional Business Logic:
-                // If payment amount is less than booking total → Failed
                 if (paymentDto.Amount < booking.TotalAmount)
-                {
                     paymentStatus = "Failed";
-                }
 
                 var payment = new Payment
                 {
@@ -70,32 +50,25 @@ namespace HotelBookingApp.Services
                     PaymentStatus = paymentStatus
                 };
 
-                _context.Payments.Add(payment);
+                var createdPayment = await _paymentRepository.AddAsync(payment);
 
-                // If payment completed → update booking status
-                if (paymentStatus == "Completed")
-                {
-                    booking.Status = "Confirmed";
-                }
-                else if (paymentStatus == "Failed")
-                {
-                    booking.Status = "Payment Failed";
-                }
+                if (paymentStatus == "Completed") booking.Status = "Confirmed";
+                else if (paymentStatus == "Failed") booking.Status = "Payment Failed";
 
-                await _context.SaveChangesAsync();
+                await _bookingRepository.UpdateAsync(booking.BookingId, booking);
 
                 return new PaymentResponseDto
                 {
-                    PaymentId = payment.PaymentId,
-                    BookingId = payment.BookingId,
-                    Amount = payment.Amount,
-                    PaymentMethod = payment.PaymentMethod,
-                    PaymentStatus = payment.PaymentStatus
+                    PaymentId = createdPayment.PaymentId,
+                    BookingId = createdPayment.BookingId,
+                    Amount = createdPayment.Amount,
+                    PaymentMethod = createdPayment.PaymentMethod,
+                    PaymentStatus = createdPayment.PaymentStatus
                 };
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error processing payment: {ex.Message}");
+                throw new Exception($"Error making payment: {ex.Message}");
             }
         }
 
@@ -106,42 +79,27 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var payment = await _context.Payments
-                    .Include(p => p.Booking)
-                    .FirstOrDefaultAsync(p => p.PaymentId == paymentId);
-
-                if (payment == null)
-                    return null;
+                var payment = await _paymentRepository.GetByIdAsync(paymentId);
+                if (payment == null) return null;
 
                 if (string.IsNullOrWhiteSpace(newStatus))
                     throw new Exception("Status cannot be empty.");
 
-                // Allowed statuses
-                if (newStatus != "Completed" &&
-                    newStatus != "Failed" &&
-                    newStatus != "Refunded" &&
-                    newStatus != "Pending")
-                {
+                if (newStatus != "Completed" && newStatus != "Failed" && newStatus != "Refunded" && newStatus != "Pending")
                     throw new Exception("Invalid payment status.");
-                }
 
                 payment.PaymentStatus = newStatus;
+                await _paymentRepository.UpdateAsync(paymentId, payment);
 
-                // Update booking based on payment status
-                if (newStatus == "Completed")
+                var booking = await _bookingRepository.GetByIdAsync(payment.BookingId);
+                if (booking != null)
                 {
-                    payment.Booking!.Status = "Confirmed";
-                }
-                else if (newStatus == "Failed")
-                {
-                    payment.Booking!.Status = "Payment Failed";
-                }
-                else if (newStatus == "Refunded")
-                {
-                    payment.Booking!.Status = "Cancelled";
-                }
+                    if (newStatus == "Completed") booking.Status = "Confirmed";
+                    else if (newStatus == "Failed") booking.Status = "Payment Failed";
+                    else if (newStatus == "Refunded") booking.Status = "Cancelled";
 
-                await _context.SaveChangesAsync();
+                    await _bookingRepository.UpdateAsync(booking.BookingId, booking);
+                }
 
                 return new PaymentResponseDto
                 {
@@ -165,7 +123,7 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var payment = await _context.Payments.FindAsync(paymentId);
+                var payment = await _paymentRepository.GetByIdAsync(paymentId);
                 if (payment == null) return null;
 
                 return new PaymentResponseDto
@@ -190,7 +148,38 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                return await _context.Payments
+                var payments = await _paymentRepository.GetAllAsync();
+                return payments.Select(p => new PaymentResponseDto
+                {
+                    PaymentId = p.PaymentId,
+                    BookingId = p.BookingId,
+                    Amount = p.Amount,
+                    PaymentMethod = p.PaymentMethod,
+                    PaymentStatus = p.PaymentStatus
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving payments: {ex.Message}");
+            }
+        }
+
+        // ===============================
+        // GET PAGED PAYMENTS
+        // ===============================
+        public async Task<PagedResponseDto<PaymentResponseDto>> GetPaymentsPagedAsync(PagedRequestDto request)
+        {
+            try
+            {
+                if (request.PageNumber <= 0) request.PageNumber = 1;
+                if (request.PageSize <= 0) request.PageSize = 10;
+
+                var allPayments = await _paymentRepository.GetAllAsync();
+                var totalRecords = allPayments.Count();
+
+                var pagedPayments = allPayments
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
                     .Select(p => new PaymentResponseDto
                     {
                         PaymentId = p.PaymentId,
@@ -199,11 +188,19 @@ namespace HotelBookingApp.Services
                         PaymentMethod = p.PaymentMethod,
                         PaymentStatus = p.PaymentStatus
                     })
-                    .ToListAsync();
+                    .ToList();
+
+                return new PagedResponseDto<PaymentResponseDto>
+                {
+                    Data = pagedPayments,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize,
+                    TotalRecords = totalRecords
+                };
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving payments: {ex.Message}");
+                throw new Exception($"Error retrieving paged payments: {ex.Message}");
             }
         }
     }

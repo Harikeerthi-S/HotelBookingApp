@@ -1,42 +1,85 @@
 ﻿using HotelBookingApp.Interfaces.InterfaceServices;
 using HotelBookingApp.Models;
 using HotelBookingApp.Models.Dtos;
-using Microsoft.EntityFrameworkCore;
+using HotelBookingAppWebApi.Interfaces;
+using System.Linq.Expressions;
 
 namespace HotelBookingApp.Services
 {
     public class ReviewService : IReviewService
     {
-        private readonly HotelBookingContext _context;
+        private readonly IRepository<int, Review> _reviewRepository;
+        private readonly IRepository<int, Hotel> _hotelRepository;
+        private readonly IRepository<int, User> _userRepository;
 
-        public ReviewService(HotelBookingContext context)
+        public ReviewService(
+            IRepository<int, Review> reviewRepository,
+            IRepository<int, Hotel> hotelRepository,
+            IRepository<int, User> userRepository)
         {
-            _context = context;
+            _reviewRepository = reviewRepository;
+            _hotelRepository = hotelRepository;
+            _userRepository = userRepository;
         }
 
         // ===============================
-        // GET ALL REVIEWS
+        // GET REVIEWS WITH FILTER + PAGINATION
         // ===============================
-        public async Task<IEnumerable<ReviewResponseDto>> GetAllAsync()
+        public async Task<PagedResponseDto<ReviewResponseDto>> GetReviewsPagedAsync(
+            ReviewFilterDto filter,
+            PagedRequestDto pageRequest)
         {
             try
             {
-                var reviews = await _context.Reviews
-                    .AsNoTracking()
-                    .ToListAsync();
+                if (pageRequest.PageNumber <= 0)
+                    pageRequest.PageNumber = 1;
 
-                return reviews.Select(r => new ReviewResponseDto
+                if (pageRequest.PageSize <= 0)
+                    pageRequest.PageSize = 10;
+
+                // Build filter expression
+                Expression<Func<Review, bool>> predicate = r => true;
+
+                if (filter.HotelId.HasValue)
+                    predicate = r => r.HotelId == filter.HotelId.Value;
+
+                if (filter.UserId.HasValue)
+                    predicate = r => r.UserId == filter.UserId.Value;
+
+                if (filter.Rating.HasValue)
+                    predicate = r => r.Rating == filter.Rating.Value;
+
+                // Get filtered data
+                var allReviews = await _reviewRepository.GetAllAsync();
+                var query = allReviews.AsQueryable().Where(predicate);
+
+                var totalRecords = query.Count();
+
+                var data = query
+                    .OrderBy(r => r.ReviewId)
+                    .Skip((pageRequest.PageNumber - 1) * pageRequest.PageSize)
+                    .Take(pageRequest.PageSize)
+                    .Select(r => new ReviewResponseDto
+                    {
+                        ReviewId = r.ReviewId,
+                        HotelId = r.HotelId,
+                        UserId = r.UserId,
+                        Rating = r.Rating,
+                        Comment = r.Comment
+                    })
+                    .ToList();
+
+                return new PagedResponseDto<ReviewResponseDto>
                 {
-                    ReviewId = r.ReviewId,
-                    HotelId = r.HotelId,
-                    UserId = r.UserId,
-                    Rating = r.Rating,
-                    Comment = r.Comment
-                });
+                    Data = data,
+                    PageNumber = pageRequest.PageNumber,
+                    PageSize = pageRequest.PageSize,
+                    TotalRecords = totalRecords
+                };
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving reviews.", ex);
+                throw new Exception("Error retrieving paged reviews.", ex);
             }
         }
 
@@ -47,9 +90,7 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var review = await _context.Reviews
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.ReviewId == reviewId);
+                var review = await _reviewRepository.GetByIdAsync(reviewId);
 
                 if (review == null)
                     return null;
@@ -70,36 +111,25 @@ namespace HotelBookingApp.Services
         }
 
         // ===============================
-        // CREATE REVIEW (BUSINESS LOGIC)
+        // CREATE REVIEW
         // ===============================
         public async Task<ReviewResponseDto> CreateAsync(CreateReviewDto dto)
         {
             try
             {
-                // 🔹 1. Validate Rating
                 if (dto.Rating < 1 || dto.Rating > 5)
                     throw new ArgumentException("Rating must be between 1 and 5.");
 
-                // 🔹 2. Check Hotel Exists
-                var hotelExists = await _context.Hotels
-                    .AnyAsync(h => h.HotelId == dto.HotelId);
-
-                if (!hotelExists)
+                var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId);
+                if (hotel == null)
                     throw new KeyNotFoundException("Hotel not found.");
 
-                // 🔹 3. Check User Exists
-                var userExists = await _context.Users
-                    .AnyAsync(u => u.UserId == dto.UserId);
-
-                if (!userExists)
+                var user = await _userRepository.GetByIdAsync(dto.UserId);
+                if (user == null)
                     throw new KeyNotFoundException("User not found.");
 
-                // 🔹 4. Prevent Duplicate Review
-                var alreadyReviewed = await _context.Reviews
-                    .AnyAsync(r => r.HotelId == dto.HotelId &&
-                                   r.UserId == dto.UserId);
-
-                if (alreadyReviewed)
+                var reviews = await _reviewRepository.GetAllAsync();
+                if (reviews.Any(r => r.HotelId == dto.HotelId && r.UserId == dto.UserId))
                     throw new InvalidOperationException("User already reviewed this hotel.");
 
                 var review = new Review
@@ -110,16 +140,15 @@ namespace HotelBookingApp.Services
                     Comment = dto.Comment
                 };
 
-                _context.Reviews.Add(review);
-                await _context.SaveChangesAsync();
+                var created = await _reviewRepository.AddAsync(review);
 
                 return new ReviewResponseDto
                 {
-                    ReviewId = review.ReviewId,
-                    HotelId = review.HotelId,
-                    UserId = review.UserId,
-                    Rating = review.Rating,
-                    Comment = review.Comment
+                    ReviewId = created.ReviewId,
+                    HotelId = created.HotelId,
+                    UserId = created.UserId,
+                    Rating = created.Rating,
+                    Comment = created.Comment
                 };
             }
             catch (Exception ex)
@@ -135,16 +164,8 @@ namespace HotelBookingApp.Services
         {
             try
             {
-                var review = await _context.Reviews
-                    .FirstOrDefaultAsync(r => r.ReviewId == reviewId);
-
-                if (review == null)
-                    return false;
-
-                _context.Reviews.Remove(review);
-                await _context.SaveChangesAsync();
-
-                return true;
+                var deleted = await _reviewRepository.DeleteAsync(reviewId);
+                return deleted != null;
             }
             catch (Exception ex)
             {

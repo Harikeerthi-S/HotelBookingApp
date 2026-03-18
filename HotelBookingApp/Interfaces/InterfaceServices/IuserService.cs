@@ -8,9 +8,6 @@ namespace HotelBookingApp.Interfaces.InterfaceServices
         // 🔹 Register a new user
         Task<RegisterUserResponseDTO> RegisterUser(RegisterUserRequestDTO request);
 
-        // 🔹 Login a user
-        Task<LoginUserResponseDTO> LoginUser(LoginUserRequestDTO request);
-
         // 🔹 Get a user by ID
         Task<GetUsersResponseDTO> GetUserById(int userId);
 

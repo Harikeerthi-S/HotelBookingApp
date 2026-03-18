@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelBookingApp.Migrations
 {
     [DbContext(typeof(HotelBookingContext))]
-    [Migration("20260301111930_Hotel")]
+    [Migration("20260306071556_Hotel")]
     partial class Hotel
     {
         /// <inheritdoc />
@@ -186,6 +186,9 @@ namespace HotelBookingApp.Migrations
 
                     b.Property<double>("StarRating")
                         .HasColumnType("float");
+
+                    b.Property<int>("TotalRooms")
+                        .HasColumnType("int");
 
                     b.HasKey("HotelId");
 

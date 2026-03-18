@@ -1,5 +1,5 @@
 ﻿using HotelBookingApp.Models.Dtos;
-using HotelBookingApp.Services;
+using HotelBookingApp.Interfaces.InterfaceServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,43 +23,32 @@ namespace HotelBookingApp.Controllers
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> Create([FromBody] CreateHotelDto dto)
         {
+            if (dto == null) return BadRequest(new { Message = "Hotel data is required." });
+
             try
             {
-                if (dto == null)
-                    return BadRequest(new { Message = "Hotel data is required." });
-
                 var hotel = await _hotelService.CreateHotelAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { hotelId = hotel.HotelId }, hotel);
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "An unexpected error occurred.", Details = ex.Message });
+                return StatusCode(500, new { Message = "Error creating hotel.", Details = ex.Message });
             }
         }
 
         // ==========================================
-        // PUBLIC: Get paginated hotels
+        // PUBLIC/HOTELMANAGER: Get paginated hotels
         // ==========================================
-        [HttpGet("paged")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetPaged([FromQuery] PagedRequestDto request)
+        [HttpPost("paged")]
+        [Authorize(Roles = "admin,user,hotelmanager")]
+        public async Task<IActionResult> GetPaged([FromBody] PagedRequestDto request)
         {
+            if (request == null) return BadRequest(new { Message = "Pagination request is required." });
+
             try
             {
                 var result = await _hotelService.GetHotelsPagedAsync(request);
                 return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -68,20 +57,21 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // PUBLIC: Filter hotels with pagination
+        // PUBLIC/HOTELMANAGER: Filter hotels with pagination
         // ==========================================
         [HttpPost("filter")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Filter([FromBody] HotelFilterDto filter, [FromQuery] PagedRequestDto request)
+        [Authorize(Roles = "admin,user,hotelmanager")]
+        public async Task<IActionResult> Filter(
+            [FromBody] HotelFilterDto filter,
+            [FromQuery] PagedRequestDto request)
         {
+            if (filter == null) return BadRequest(new { Message = "Filter criteria is required." });
+            if (request == null) return BadRequest(new { Message = "Pagination request is required." });
+
             try
             {
                 var result = await _hotelService.FilterHotelsPagedAsync(filter, request);
                 return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -90,7 +80,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // PUBLIC: Get hotel by ID
+        // PUBLIC/HOTELMANAGER: Get hotel by ID
         // ==========================================
         [HttpGet("{hotelId:int}")]
         [AllowAnonymous]
@@ -99,14 +89,9 @@ namespace HotelBookingApp.Controllers
             try
             {
                 var hotel = await _hotelService.GetHotelByIdAsync(hotelId);
-                if (hotel == null)
-                    return NotFound(new { Message = "Hotel not found." });
+                if (hotel == null) return NotFound(new { Message = "Hotel not found." });
 
                 return Ok(hotel);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -115,23 +100,19 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // PUBLIC: Search hotels by location
+        // PUBLIC/HOTELMANAGER: Search hotels by location
         // ==========================================
         [HttpGet("search")]
         [AllowAnonymous]
         public async Task<IActionResult> Search([FromQuery] string location)
         {
+            if (string.IsNullOrWhiteSpace(location))
+                return BadRequest(new { Message = "Location query is required." });
+
             try
             {
-                if (string.IsNullOrWhiteSpace(location))
-                    return BadRequest(new { Message = "Location query is required." });
-
                 var hotels = await _hotelService.SearchHotelsAsync(location);
                 return Ok(hotels);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -146,24 +127,14 @@ namespace HotelBookingApp.Controllers
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> Update(int hotelId, [FromBody] CreateHotelDto dto)
         {
+            if (dto == null) return BadRequest(new { Message = "Hotel data is required." });
+
             try
             {
-                if (dto == null)
-                    return BadRequest(new { Message = "Hotel data is required." });
-
                 var hotel = await _hotelService.UpdateHotelAsync(hotelId, dto);
-                if (hotel == null)
-                    return NotFound(new { Message = "Hotel not found." });
+                if (hotel == null) return NotFound(new { Message = "Hotel not found." });
 
                 return Ok(hotel);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -181,14 +152,9 @@ namespace HotelBookingApp.Controllers
             try
             {
                 var result = await _hotelService.DeactivateHotelAsync(hotelId);
-                if (!result)
-                    return NotFound(new { Message = "Hotel not found." });
+                if (!result) return NotFound(new { Message = "Hotel not found." });
 
                 return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {

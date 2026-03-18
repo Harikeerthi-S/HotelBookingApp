@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\harikeerthi\\HotelBookingAppSolution\\HotelBookingTesting\\HotelBookingTesting.csproj": {}
+    "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\HotelBookingApp\\HotelBookingTesting\\HotelBookingTesting.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\harikeerthi\\HotelBookingAppSolution\\HotelBookingTesting\\HotelBookingTesting.csproj": {
+    "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\HotelBookingApp\\HotelBookingTesting\\HotelBookingTesting.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\harikeerthi\\HotelBookingAppSolution\\HotelBookingTesting\\HotelBookingTesting.csproj",
+        "projectUniqueName": "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\HotelBookingApp\\HotelBookingTesting\\HotelBookingTesting.csproj",
         "projectName": "HotelBookingTesting",
-        "projectPath": "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\harikeerthi\\HotelBookingAppSolution\\HotelBookingTesting\\HotelBookingTesting.csproj",
+        "projectPath": "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\HotelBookingApp\\HotelBookingTesting\\HotelBookingTesting.csproj",
         "packagesPath": "C:\\Users\\Harikeerthi.S\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\harikeerthi\\HotelBookingAppSolution\\HotelBookingTesting\\obj\\",
+        "outputPath": "C:\\Users\\Harikeerthi.S\\OneDrive - New American Funding\\Desktop\\HotelBookingApp\\HotelBookingTesting\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

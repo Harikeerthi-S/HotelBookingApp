@@ -19,18 +19,17 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // ADD TO WISHLIST (User Only)
+        // ADD TO WISHLIST
         // ==========================================
         [HttpPost]
-        [Authorize(Roles = "user")]
-        public async Task<IActionResult> AddToWishlist(WishlistDto dto)
+        [Authorize(Roles = "user,hotelmanager")]
+        public async Task<IActionResult> AddToWishlist([FromBody] WishlistDto dto)
         {
             try
             {
                 var userIdFromToken = int.Parse(
                     User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-                // Ensure user can only add for themselves
                 if (dto.UserId != userIdFromToken)
                     return Forbid();
 
@@ -49,10 +48,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // GET MY WISHLIST (User)
+        // GET MY WISHLIST
         // ==========================================
         [HttpGet("my")]
-        [Authorize(Roles = "user")]
+        [Authorize(Roles = "user,hotelmanager")]
         public async Task<IActionResult> GetMyWishlist()
         {
             try
@@ -76,7 +75,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // GET USER WISHLIST (Admin Only)
+        // GET USER WISHLIST (Admin)
         // ==========================================
         [HttpGet("user/{userId}")]
         [Authorize(Roles = "admin")]
@@ -103,7 +102,7 @@ namespace HotelBookingApp.Controllers
         // REMOVE BY WISHLIST ID
         // ==========================================
         [HttpDelete("{wishlistId}")]
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "admin,user,hotelmanager")]
         public async Task<IActionResult> RemoveFromWishlist(int wishlistId)
         {
             try
@@ -114,7 +113,10 @@ namespace HotelBookingApp.Controllers
                 if (!result)
                     return NotFound(new { message = "Wishlist item not found." });
 
-                return Ok(new { message = "Removed from wishlist successfully." });
+                return Ok(new
+                {
+                    message = "Removed from wishlist successfully."
+                });
             }
             catch (Exception ex)
             {
@@ -127,10 +129,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // REMOVE BY USER + HOTEL (User Only)
+        // REMOVE BY USER + HOTEL
         // ==========================================
         [HttpDelete("remove")]
-        [Authorize(Roles = "user")]
+        [Authorize(Roles = "user,hotelmanager")]
         public async Task<IActionResult> RemoveByUserAndHotel([FromQuery] int hotelId)
         {
             try
@@ -144,7 +146,10 @@ namespace HotelBookingApp.Controllers
                 if (!result)
                     return NotFound(new { message = "Wishlist item not found." });
 
-                return Ok(new { message = "Removed successfully." });
+                return Ok(new
+                {
+                    message = "Removed successfully."
+                });
             }
             catch (Exception ex)
             {

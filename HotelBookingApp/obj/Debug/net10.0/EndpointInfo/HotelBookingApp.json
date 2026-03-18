@@ -130,6 +130,37 @@
         }
       }
     },
+    "/api/Auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginUserRequestDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginUserRequestDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginUserRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Booking": {
       "post": {
         "tags": [
@@ -184,8 +215,8 @@
         }
       }
     },
-    "/api/Booking/user/{userId}": {
-      "get": {
+    "/api/Booking/user/{userId}/paged": {
+      "post": {
         "tags": [
           "Booking"
         ],
@@ -198,24 +229,27 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -223,8 +257,8 @@
         }
       }
     },
-    "/api/Booking/hotel/{hotelId}": {
-      "get": {
+    "/api/Booking/hotel/{hotelId}/paged": {
+      "post": {
         "tags": [
           "Booking"
         ],
@@ -237,18 +271,44 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
             }
-          },
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Booking/{bookingId}/confirm": {
+      "put": {
+        "tags": [
+          "Booking"
+        ],
+        "parameters": [
           {
-            "name": "PageSize",
-            "in": "query",
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -263,7 +323,7 @@
       }
     },
     "/api/Booking/{bookingId}/cancel": {
-      "post": {
+      "put": {
         "tags": [
           "Booking"
         ],
@@ -286,7 +346,7 @@
       }
     },
     "/api/Booking/{bookingId}/complete": {
-      "post": {
+      "put": {
         "tags": [
           "Booking"
         ],
@@ -500,8 +560,8 @@
         }
       }
     },
-    "/api/Cancellation/user/{userId}": {
-      "get": {
+    "/api/Cancellation/user/{userId}/paged": {
+      "post": {
         "tags": [
           "Cancellation"
         ],
@@ -514,24 +574,27 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -610,28 +673,29 @@
       }
     },
     "/api/Hotel/paged": {
-      "get": {
+      "post": {
         "tags": [
           "Hotel"
         ],
-        "parameters": [
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagedRequestDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -1082,36 +1146,44 @@
         }
       }
     },
-    "/api/Review": {
-      "get": {
-        "tags": [
-          "Review"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
+    "/api/Review/paged": {
       "post": {
         "tags": [
           "Review"
+        ],
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateReviewDto"
+                "$ref": "#/components/schemas/ReviewFilterDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateReviewDto"
+                "$ref": "#/components/schemas/ReviewFilterDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateReviewDto"
+                "$ref": "#/components/schemas/ReviewFilterDto"
               }
             }
           }
@@ -1160,6 +1232,37 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Review": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -1413,37 +1516,6 @@
         }
       }
     },
-    "/api/Users/login": {
-      "post": {
-        "tags": [
-          "Users"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginUserRequestDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginUserRequestDTO"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginUserRequestDTO"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Users/{userId}": {
       "get": {
         "tags": [
@@ -1659,6 +1731,10 @@
             "type": "integer",
             "format": "int32"
           },
+          "numberOfRooms": {
+            "type": "integer",
+            "format": "int32"
+          },
           "checkIn": {
             "type": "string",
             "format": "date-time"
@@ -1724,6 +1800,10 @@
           "address": {
             "type": "string",
             "nullable": true
+          },
+          "totalRooms": {
+            "type": "integer",
+            "format": "int32"
           },
           "starRating": {
             "type": "number",
@@ -1856,6 +1936,20 @@
         },
         "additionalProperties": false
       },
+      "PagedRequestDto": {
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "PaymentDto": {
         "type": "object",
         "properties": {
@@ -1895,6 +1989,27 @@
           },
           "role": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReviewFilterDto": {
+        "type": "object",
+        "properties": {
+          "hotelId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "rating": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         },

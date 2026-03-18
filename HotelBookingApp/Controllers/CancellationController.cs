@@ -2,20 +2,22 @@
 using HotelBookingApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 namespace HotelBookingApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // All endpoints require authentication
     public class CancellationController : ControllerBase
     {
         private readonly ICancellationService _cancellationService;
-
         public CancellationController(ICancellationService cancellationService)
         {
             _cancellationService = cancellationService;
         }
-
+        // ==========================================
+        // CREATE CANCELLATION (User Only)
+        // ==========================================
         [HttpPost]
         [Authorize(Roles = "user")]
         public async Task<IActionResult> Create([FromBody] CreateCancellationDto dto)
@@ -28,9 +30,11 @@ namespace HotelBookingApp.Controllers
             catch (InvalidOperationException ex) { return BadRequest(new { Message = ex.Message }); }
             catch (Exception ex) { return StatusCode(500, new { Message = "Error creating cancellation", Details = ex.Message }); }
         }
-
+        // ==========================================
+        // GET CANCELLATION BY ID (User, Admin, HotelManager)
+        // ==========================================
         [HttpGet("{cancellationId:int}")]
-        [Authorize(Roles = "user,admin")]
+        [Authorize(Roles = "user,admin,hotelmanager")]
         public async Task<IActionResult> GetById(int cancellationId)
         {
             try
@@ -41,19 +45,25 @@ namespace HotelBookingApp.Controllers
             }
             catch (Exception ex) { return StatusCode(500, new { Message = "Error retrieving cancellation", Details = ex.Message }); }
         }
-
-        [HttpGet("user/{userId:int}")]
-        [Authorize(Roles = "user,admin")]
-        public async Task<IActionResult> GetByUser(int userId, [FromQuery] PagedRequestDto pageRequest)
+        // ==========================================
+        // POST: GET CANCELLATIONS BY USER (User, Admin, HotelManager) with Pagination
+        // ==========================================
+        [HttpPost("user/{userId:int}/paged")]
+        [Authorize(Roles = "user,admin,hotelmanager")]
+        public async Task<IActionResult> GetByUserPaged(int userId, [FromBody] PagedRequestDto pageRequest)
         {
             try
             {
+                if (pageRequest == null)
+                    pageRequest = new PagedRequestDto { PageNumber = 1, PageSize = 10 };
                 var cancellations = await _cancellationService.GetCancellationsByUserAsync(userId, pageRequest);
                 return Ok(cancellations);
             }
             catch (Exception ex) { return StatusCode(500, new { Message = "Error retrieving cancellations", Details = ex.Message }); }
         }
-
+        // ==========================================
+        // UPDATE CANCELLATION STATUS (Admin Only)
+        // ==========================================
         [HttpPut("{cancellationId:int}/status")]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> UpdateStatus(int cancellationId, [FromQuery] string status, [FromQuery] decimal refundAmount = 0)

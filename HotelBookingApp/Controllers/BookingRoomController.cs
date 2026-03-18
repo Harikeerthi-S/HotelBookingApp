@@ -7,6 +7,7 @@ namespace HotelBookingApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // All endpoints require authentication
     public class BookingRoomController : ControllerBase
     {
         private readonly IBookingRoomService _service;
@@ -17,7 +18,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // CREATE BOOKING ROOM
+        // CREATE BOOKING ROOM (User or Admin)
         // ==========================================
         [HttpPost]
         [Authorize(Roles = "user,admin")]
@@ -39,10 +40,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // GET BOOKING ROOM BY ID
+        // GET BOOKING ROOM BY ID (User, Admin, HotelManager)
         // ==========================================
         [HttpGet("{bookingRoomId:int}")]
-        [Authorize(Roles = "user,admin")]
+        [Authorize(Roles = "user,admin,hotelmanager")]
         public async Task<IActionResult> GetById(int bookingRoomId)
         {
             try
@@ -58,10 +59,10 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // GET ALL BOOKING ROOMS FOR A BOOKING
+        // GET ALL BOOKING ROOMS FOR A BOOKING (User, Admin, HotelManager)
         // ==========================================
         [HttpGet("booking/{bookingId:int}")]
-        [Authorize(Roles = "user,admin")]
+        [Authorize(Roles = "user,admin,hotelmanager")]
         public async Task<IActionResult> GetByBookingId(int bookingId)
         {
             try
@@ -76,7 +77,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // UPDATE BOOKING ROOM
+        // UPDATE BOOKING ROOM (User or Admin)
         // ==========================================
         [HttpPut("{bookingRoomId:int}")]
         [Authorize(Roles = "user,admin")]
@@ -99,7 +100,7 @@ namespace HotelBookingApp.Controllers
         }
 
         // ==========================================
-        // DELETE BOOKING ROOM
+        // DELETE BOOKING ROOM (User or Admin)
         // ==========================================
         [HttpDelete("{bookingRoomId:int}")]
         [Authorize(Roles = "user,admin")]
